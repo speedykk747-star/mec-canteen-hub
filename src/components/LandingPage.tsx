@@ -21,7 +21,7 @@ export function LandingPage({ onLogin }: LandingPageProps) {
     name: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isSignUp) {
@@ -31,7 +31,7 @@ export function LandingPage({ onLogin }: LandingPageProps) {
         return;
       }
 
-      const users = storage.getUsers();
+      const users = await storage.getUsers();
       if (users.find((u) => u.email === formData.email)) {
         toast.error("Email already registered");
         return;
@@ -47,11 +47,15 @@ export function LandingPage({ onLogin }: LandingPageProps) {
         createdAt: new Date().toISOString(),
       };
 
-      users.push(newUser);
-      storage.setUsers(users);
-      storage.setCurrentUser(newUser);
-      toast.success("Account created successfully!");
-      onLogin(newUser);
+      // For Firebase, we create the user directly
+      const createdUser = await storage.createUser(newUser);
+      if (createdUser) {
+        storage.setCurrentUser(createdUser);
+        toast.success("Account created successfully!");
+        onLogin(createdUser);
+      } else {
+        toast.error("Failed to create account. Please check the console for more details.");
+      }
     } else {
       // Sign In
       if (!formData.email || !formData.password) {
@@ -81,7 +85,7 @@ export function LandingPage({ onLogin }: LandingPageProps) {
       }
 
       // Check regular users
-      const users = storage.getUsers();
+      const users = await storage.getUsers();
       const user = users.find(
         (u) => u.email === formData.email && u.password === formData.password
       );
@@ -111,66 +115,66 @@ export function LandingPage({ onLogin }: LandingPageProps) {
           <CardTitle className="text-3xl font-bold">MEC Canteen</CardTitle>
           <CardDescription>Welcome! Sign in or create an account to order food</CardDescription>
         </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="Enter your name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
-              )}
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="name">Full Name</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  id="name"
+                  placeholder="Enter your name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                {isSignUp ? "Sign Up" : "Sign In"}
-              </Button>
-            </form>
-
-            <div className="mt-4 text-center text-sm">
-              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-              <button
-                type="button"
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-primary font-medium hover:underline"
-              >
-                {isSignUp ? "Sign In" : "Sign Up"}
-              </button>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
             </div>
-
-            <div className="mt-6 pt-6 border-t border-border">
-              <p className="text-xs text-muted-foreground text-center">
-                <strong>Demo Accounts:</strong>
-                <br />
-                Shop: canteen@admin / shop123
-                <br />
-                Admin: admin@mec / admin123
-              </p>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
             </div>
-          </CardContent>
-        </Card>
+            <Button type="submit" className="w-full">
+              {isSignUp ? "Sign Up" : "Sign In"}
+            </Button>
+          </form>
+
+          <div className="mt-4 text-center text-sm">
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+            <button
+              type="button"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-primary font-medium hover:underline"
+            >
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-border">
+            <p className="text-xs text-muted-foreground text-center">
+              <strong>Demo Accounts:</strong>
+              <br />
+              Shop: canteen@admin / shop123
+              <br />
+              Admin: admin@mec / admin123
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

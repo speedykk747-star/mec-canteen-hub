@@ -1,181 +1,146 @@
 import { User, MenuItem, Order, Notification } from "@/types";
+import { firebaseStorage } from "./firebaseStorage";
+import { PREDEFINED_ACCOUNTS } from "@/lib/storageConstants";
 
-const STORAGE_KEYS = {
-  USERS: "mec_canteen_users",
-  MENU: "mec_canteen_menu",
-  ORDERS: "mec_canteen_orders",
-  NOTIFICATIONS: "mec_canteen_notifications",
-  CURRENT_USER: "mec_canteen_current_user",
-  DARK_MODE: "mec_canteen_dark_mode",
-};
+// Export predefined accounts
+export { PREDEFINED_ACCOUNTS };
 
-// Predefined shop and admin accounts
-export const PREDEFINED_ACCOUNTS = {
-  shop: {
-    email: "canteen@admin",
-    password: "shop123",
-    role: "shop" as const,
-    name: "MEC Canteen Shop",
-    id: "shop-1",
-    active: true,
-    createdAt: new Date().toISOString(),
-  },
-  admin: {
-    email: "admin@mec",
-    password: "admin123",
-    role: "admin" as const,
-    name: "MEC Administrator",
-    id: "admin-1",
-    active: true,
-    createdAt: new Date().toISOString(),
-  },
-};
+// Add a comment to trigger refresh
 
-// Initialize default menu items
-const DEFAULT_MENU: MenuItem[] = [
-  {
-    id: "item-1",
-    name: "Chicken Biryani",
-    price: 120,
-    type: "non-veg",
-    cuisine: "Indian",
-    prepTime: 20,
-    image: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400",
-    description: "Fragrant basmati rice with tender chicken pieces",
-  },
-  {
-    id: "item-2",
-    name: "Paneer Butter Masala",
-    price: 100,
-    type: "veg",
-    cuisine: "Indian",
-    prepTime: 15,
-    image: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=400",
-    description: "Creamy tomato gravy with soft paneer cubes",
-  },
-  {
-    id: "item-3",
-    name: "Masala Dosa",
-    price: 60,
-    type: "veg",
-    cuisine: "South Indian",
-    prepTime: 10,
-    image: "https://images.unsplash.com/photo-1630383249896-424e482df921?w=400",
-    description: "Crispy dosa with potato filling",
-  },
-  {
-    id: "item-4",
-    name: "Veg Fried Rice",
-    price: 80,
-    type: "veg",
-    cuisine: "Chinese",
-    prepTime: 12,
-    image: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400",
-    description: "Stir-fried rice with fresh vegetables",
-  },
-  {
-    id: "item-5",
-    name: "Grilled Sandwich",
-    price: 50,
-    type: "veg",
-    cuisine: "Continental",
-    prepTime: 8,
-    image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400",
-    description: "Toasted sandwich with cheese and veggies",
-  },
-  {
-    id: "item-6",
-    name: "Coffee",
-    price: 30,
-    type: "beverage",
-    cuisine: "Beverage",
-    prepTime: 5,
-    image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400",
-    description: "Hot filter coffee",
-  },
-  {
-    id: "item-7",
-    name: "Mango Juice",
-    price: 40,
-    type: "beverage",
-    cuisine: "Beverage",
-    prepTime: 3,
-    image: "https://images.unsplash.com/photo-1546173159-315724a31696?w=400",
-    description: "Fresh mango juice",
-  },
-  {
-    id: "item-8",
-    name: "Chicken Wrap",
-    price: 90,
-    type: "non-veg",
-    cuisine: "Continental",
-    prepTime: 12,
-    image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400",
-    description: "Grilled chicken wrapped in tortilla",
-  },
-];
-
-// Storage helper functions
+// Firebase-based storage helper functions
 export const storage = {
   // Users
-  getUsers: (): User[] => {
-    const data = localStorage.getItem(STORAGE_KEYS.USERS);
-    return data ? JSON.parse(data) : [];
-  },
-  setUsers: (users: User[]) => {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  getUsers: async (): Promise<User[]> => {
+    return await firebaseStorage.getUsers();
   },
   
+  setUsers: async (users: User[]): Promise<void> => {
+    // In Firebase, we don't need to set all users at once
+    // This function is kept for compatibility but won't be used
+    console.warn("setUsers is not needed with Firebase. Users are managed individually.");
+  },
+
   // Menu
-  getMenu: (): MenuItem[] => {
-    const data = localStorage.getItem(STORAGE_KEYS.MENU);
-    if (!data) {
-      storage.setMenu(DEFAULT_MENU);
-      return DEFAULT_MENU;
-    }
-    return JSON.parse(data);
-  },
-  setMenu: (menu: MenuItem[]) => {
-    localStorage.setItem(STORAGE_KEYS.MENU, JSON.stringify(menu));
+  getMenu: async (): Promise<MenuItem[]> => {
+    return await firebaseStorage.getMenu();
   },
   
+  setMenu: async (menu: MenuItem[]): Promise<void> => {
+    // In Firebase, we don't need to set all menu items at once
+    // This function is kept for compatibility but won't be used
+    console.warn("setMenu is not needed with Firebase. Menu items are managed individually.");
+  },
+
   // Orders
-  getOrders: (): Order[] => {
-    const data = localStorage.getItem(STORAGE_KEYS.ORDERS);
-    return data ? JSON.parse(data) : [];
-  },
-  setOrders: (orders: Order[]) => {
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+  getOrders: async (): Promise<Order[]> => {
+    return await firebaseStorage.getOrders();
   },
   
+  setOrders: async (orders: Order[]): Promise<void> => {
+    // In Firebase, we don't need to set all orders at once
+    // This function is kept for compatibility but won't be used
+    console.warn("setOrders is not needed with Firebase. Orders are managed individually.");
+  },
+
   // Notifications
-  getNotifications: (): Notification[] => {
-    const data = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
-    return data ? JSON.parse(data) : [];
-  },
-  setNotifications: (notifications: Notification[]) => {
-    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifications));
+  getNotifications: async (): Promise<Notification[]> => {
+    return await firebaseStorage.getNotifications();
   },
   
+  setNotifications: async (notifications: Notification[]): Promise<void> => {
+    // In Firebase, we don't need to set all notifications at once
+    // This function is kept for compatibility but won't be used
+    console.warn("setNotifications is not needed with Firebase. Notifications are managed individually.");
+  },
+
   // Current User
   getCurrentUser: (): User | null => {
-    const data = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+    // This will still use localStorage for session persistence
+    const data = localStorage.getItem("mec_canteen_current_user");
     return data ? JSON.parse(data) : null;
   },
+  
   setCurrentUser: (user: User | null) => {
+    // This will still use localStorage for session persistence
     if (user) {
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+      localStorage.setItem("mec_canteen_current_user", JSON.stringify(user));
     } else {
-      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+      localStorage.removeItem("mec_canteen_current_user");
     }
   },
-  
+
   // Dark Mode
   getDarkMode: (): boolean => {
-    const data = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
+    const data = localStorage.getItem("mec_canteen_dark_mode");
     return data === "true";
   },
+  
   setDarkMode: (isDark: boolean) => {
-    localStorage.setItem(STORAGE_KEYS.DARK_MODE, String(isDark));
+    localStorage.setItem("mec_canteen_dark_mode", String(isDark));
   },
+  
+  // Firebase-specific functions
+  getUserById: async (userId: string): Promise<User | null> => {
+    return await firebaseStorage.getUserById(userId);
+  },
+  
+  getUserByEmail: async (email: string): Promise<User | null> => {
+    return await firebaseStorage.getUserByEmail(email);
+  },
+  
+  createUser: async (user: Omit<User, "id">): Promise<User | null> => {
+    return await firebaseStorage.createUser(user);
+  },
+  
+  updateUser: async (userId: string, updates: Partial<User>): Promise<boolean> => {
+    return await firebaseStorage.updateUser(userId, updates);
+  },
+  
+  getMenuItemById: async (itemId: string): Promise<MenuItem | null> => {
+    return await firebaseStorage.getMenuItemById(itemId);
+  },
+  
+  createMenuItem: async (item: Omit<MenuItem, "id">): Promise<MenuItem | null> => {
+    return await firebaseStorage.createMenuItem(item);
+  },
+  
+  updateMenuItem: async (itemId: string, updates: Partial<MenuItem>): Promise<boolean> => {
+    return await firebaseStorage.updateMenuItem(itemId, updates);
+  },
+  
+  deleteMenuItem: async (itemId: string): Promise<boolean> => {
+    return await firebaseStorage.deleteMenuItem(itemId);
+  },
+  
+  getOrdersByUser: async (userId: string): Promise<Order[]> => {
+    return await firebaseStorage.getOrdersByUser(userId);
+  },
+  
+  getOrderById: async (orderId: string): Promise<Order | null> => {
+    return await firebaseStorage.getOrderById(orderId);
+  },
+  
+  createOrder: async (order: Omit<Order, "id">): Promise<Order | null> => {
+    return await firebaseStorage.createOrder(order);
+  },
+  
+  updateOrder: async (orderId: string, updates: Partial<Order>): Promise<boolean> => {
+    return await firebaseStorage.updateOrder(orderId, updates);
+  },
+  
+  getNotificationsByUser: async (userId: string): Promise<Notification[]> => {
+    return await firebaseStorage.getNotificationsByUser(userId);
+  },
+  
+  createNotification: async (notification: Omit<Notification, "id">): Promise<Notification | null> => {
+    return await firebaseStorage.createNotification(notification);
+  },
+  
+  updateNotification: async (notificationId: string, updates: Partial<Notification>): Promise<boolean> => {
+    return await firebaseStorage.updateNotification(notificationId, updates);
+  },
+  
+  addReviewToMenuItem: async (itemId: string, review: any): Promise<boolean> => {
+    return await firebaseStorage.addReviewToMenuItem(itemId, review);
+  }
 };

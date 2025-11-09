@@ -59,10 +59,22 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Firebase (for data storage and authentication)
 
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/fb697b80-c055-427c-9133-48c8d3d7f3a8) and click on Share -> Publish.
+
+## Firebase Integration
+
+This project uses Firebase for data storage. To connect your Firebase project:
+
+1. Create a Firebase project at https://console.firebase.google.com/
+2. Copy your Firebase configuration from the Firebase Console
+3. Update `src/lib/firebase.ts` with your configuration
+4. Enable Firestore Database in your Firebase project
+
+See `FIREBASE_SETUP.md` for detailed instructions.
 
 ## Can I connect a custom domain to my Lovable project?
 

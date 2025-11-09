@@ -19,16 +19,13 @@ export function RatingModal({ item, userId, userName, onClose }: RatingModalProp
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!item || rating === 0) {
       toast.error("Please select a rating");
       return;
     }
 
-    const menu = storage.getMenu();
-    const itemIndex = menu.findIndex((i) => i.id === item.id);
-
-    if (itemIndex !== -1) {
+    try {
       const newReview: Review = {
         userId,
         userName,
@@ -37,20 +34,18 @@ export function RatingModal({ item, userId, userName, onClose }: RatingModalProp
         createdAt: new Date().toISOString(),
       };
 
-      if (!menu[itemIndex].reviews) {
-        menu[itemIndex].reviews = [];
+      // Add review to menu item using Firebase
+      const success = await storage.addReviewToMenuItem(item.id, newReview);
+      
+      if (success) {
+        toast.success("Thank you for your rating!");
+        onClose();
+      } else {
+        toast.error("Failed to submit rating");
       }
-
-      menu[itemIndex].reviews!.push(newReview);
-
-      // Calculate average rating
-      const allRatings = menu[itemIndex].reviews!.map((r) => r.rating);
-      menu[itemIndex].averageRating =
-        allRatings.reduce((sum, r) => sum + r, 0) / allRatings.length;
-
-      storage.setMenu(menu);
-      toast.success("Thank you for your rating!");
-      onClose();
+    } catch (error) {
+      console.error("Error submitting rating:", error);
+      toast.error("Failed to submit rating");
     }
   };
 

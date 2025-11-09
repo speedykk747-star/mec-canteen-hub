@@ -26,9 +26,14 @@ export function ShopPanel({ user, onLogout }: ShopPanelProps) {
     loadOrders();
   }, []);
 
-  const loadOrders = () => {
-    const allOrders = storage.getOrders();
-    setOrders(allOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+  const loadOrders = async () => {
+    try {
+      const allOrders = await storage.getOrders();
+      setOrders(allOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+    } catch (error) {
+      console.error("Error loading orders:", error);
+      toast.error("Failed to load orders");
+    }
   };
 
   const pendingOrders = useMemo(() => {
@@ -43,91 +48,97 @@ export function ShopPanel({ user, onLogout }: ShopPanelProps) {
     return orders.filter((o) => o.status === "ready" || o.status === "completed" || o.status === "declined" || o.status === "cancelled");
   }, [orders]);
 
-  const cancelOrder = (orderId: string) => {
-    const allOrders = storage.getOrders();
-    const orderIndex = allOrders.findIndex((o) => o.id === orderId);
-    
-    if (orderIndex !== -1) {
-      allOrders[orderIndex].status = "cancelled" as any;
-      allOrders[orderIndex].updatedAt = new Date().toISOString();
-      storage.setOrders(allOrders);
+  const cancelOrder = async (orderId: string) => {
+    const order = await storage.getOrderById(orderId);
+    if (order) {
+      const success = await storage.updateOrder(orderId, {
+        status: "cancelled",
+        updatedAt: new Date().toISOString()
+      });
       
-      // Create notification
-      const notifications = storage.getNotifications();
-      const notification: Notification = {
-        id: `notif-${Date.now()}`,
-        userId: allOrders[orderIndex].userId,
-        orderId,
-        message: `Your order #${orderId.slice(-6)} has been cancelled`,
-        read: false,
-        createdAt: new Date().toISOString(),
-      };
-      notifications.push(notification);
-      storage.setNotifications(notifications);
-      
-      loadOrders();
-      setSelectedOrder(null);
-      toast.success("Order cancelled");
+      if (success) {
+        // Create notification
+        const notification: Notification = {
+          id: `notif-${Date.now()}`,
+          userId: order.userId,
+          orderId,
+          message: `Your order #${orderId.slice(-6)} has been cancelled`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        };
+        
+        await storage.createNotification(notification);
+        
+        loadOrders();
+        setSelectedOrder(null);
+        toast.success("Order cancelled");
+      } else {
+        toast.error("Failed to cancel order");
+      }
     }
   };
 
-  const updateOrderStatus = (orderId: string, status: Order["status"]) => {
-    const allOrders = storage.getOrders();
-    const orderIndex = allOrders.findIndex((o) => o.id === orderId);
-    
-    if (orderIndex !== -1) {
-      allOrders[orderIndex].status = status;
-      allOrders[orderIndex].updatedAt = new Date().toISOString();
-      storage.setOrders(allOrders);
+  const updateOrderStatus = async (orderId: string, status: Order["status"]) => {
+    const order = await storage.getOrderById(orderId);
+    if (order) {
+      const success = await storage.updateOrder(orderId, {
+        status,
+        updatedAt: new Date().toISOString()
+      });
       
-      // Create notification
-      const notifications = storage.getNotifications();
-      const notification: Notification = {
-        id: `notif-${Date.now()}`,
-        userId: allOrders[orderIndex].userId,
-        orderId,
-        message: `Your order #${orderId.slice(-6)} has been ${status}`,
-        read: false,
-        createdAt: new Date().toISOString(),
-      };
-      notifications.push(notification);
-      storage.setNotifications(notifications);
-      
-      loadOrders();
-      toast.success(`Order ${status}`);
+      if (success) {
+        // Create notification
+        const notification: Notification = {
+          id: `notif-${Date.now()}`,
+          userId: order.userId,
+          orderId,
+          message: `Your order #${orderId.slice(-6)} has been ${status}`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        };
+        
+        await storage.createNotification(notification);
+        
+        loadOrders();
+        toast.success(`Order ${status}`);
+      } else {
+        toast.error(`Failed to update order to ${status}`);
+      }
     }
   };
 
-  const updatePrepTime = (orderId: string) => {
+  const updatePrepTime = async (orderId: string) => {
     if (newPrepTime <= 0) {
       toast.error("Please enter a valid preparation time");
       return;
     }
 
-    const allOrders = storage.getOrders();
-    const orderIndex = allOrders.findIndex((o) => o.id === orderId);
+    const success = await storage.updateOrder(orderId, {
+      prepTime: newPrepTime,
+      updatedAt: new Date().toISOString()
+    });
     
-    if (orderIndex !== -1) {
-      allOrders[orderIndex].prepTime = newPrepTime;
-      allOrders[orderIndex].updatedAt = new Date().toISOString();
-      storage.setOrders(allOrders);
-      
-      // Create notification
-      const notifications = storage.getNotifications();
-      const notification: Notification = {
-        id: `notif-${Date.now()}`,
-        userId: allOrders[orderIndex].userId,
-        orderId,
-        message: `Preparation time updated to ${newPrepTime} minutes for order #${orderId.slice(-6)}`,
-        read: false,
-        createdAt: new Date().toISOString(),
-      };
-      notifications.push(notification);
-      storage.setNotifications(notifications);
+    if (success) {
+      const order = await storage.getOrderById(orderId);
+      if (order) {
+        // Create notification
+        const notification: Notification = {
+          id: `notif-${Date.now()}`,
+          userId: order.userId,
+          orderId,
+          message: `Preparation time updated to ${newPrepTime} minutes for order #${orderId.slice(-6)}`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        };
+        
+        await storage.createNotification(notification);
+      }
       
       loadOrders();
       setSelectedOrder(null);
       toast.success("Preparation time updated");
+    } else {
+      toast.error("Failed to update preparation time");
     }
   };
 

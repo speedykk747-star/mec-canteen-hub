@@ -8,6 +8,9 @@ import NotFound from "./pages/NotFound";
 import { LandingPage } from "./components/LandingPage";
 import { storage } from "./lib/storage";
 
+// Initialize Firebase
+import "./lib/firebase";
+
 const queryClient = new QueryClient();
 
 const App = () => (

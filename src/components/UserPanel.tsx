@@ -13,15 +13,17 @@ import { ShoppingCart, LogOut, Search, Bell, X, Clock, Star, History } from "luc
 import { toast } from "sonner";
 import { RatingModal } from "./RatingModal";
 import { AnimatedBackground } from "./AnimatedBackground";
+
 interface UserPanelProps {
   user: User;
   onLogout: () => void;
 }
+
 export function UserPanel({
   user,
   onLogout
 }: UserPanelProps) {
-  const [menu, setMenu] = useState<MenuItem[]>(storage.getMenu());
+  const [menu, setMenu] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,38 +36,64 @@ export function UserPanel({
   const [notificationHistory, setNotificationHistory] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [ratingItem, setRatingItem] = useState<MenuItem | null>(null);
+
   useEffect(() => {
+    loadData();
+    
     const interval = setInterval(() => {
-      setMenu(storage.getMenu());
-      loadNotifications();
-    }, 2000);
+      loadData();
+    }, 5000);
+    
     return () => clearInterval(interval);
   }, [user.id]);
-  const loadNotifications = () => {
-    const allNotifications = storage.getNotifications();
-    const activeNotifs = allNotifications.filter(n => n.userId === user.id && !n.read);
-    const clearedNotifs = allNotifications.filter(n => n.userId === user.id && n.read);
-    setNotifications(activeNotifs);
-    setNotificationHistory(clearedNotifs);
-  };
-  const clearAllNotifications = () => {
-    // Mark all active notifications as read in storage
-    const allNotifications = storage.getNotifications();
-    const updatedNotifications = allNotifications.map(n => notifications.some(activeN => activeN.id === n.id) ? {
-      ...n,
-      read: true
-    } : n);
-    storage.setNotifications(updatedNotifications);
 
-    // Update local state
-    setNotificationHistory(prev => {
-      const existingIds = new Set(prev.map(n => n.id));
-      const newItems = notifications.filter(n => !existingIds.has(n.id));
-      return [...prev, ...newItems];
-    });
-    setNotifications([]);
-    toast.success("Notifications cleared");
+  const loadData = async () => {
+    try {
+      // Load menu
+      const menuData = await storage.getMenu();
+      setMenu(menuData);
+      
+      // Load notifications
+      const allNotifications = await storage.getNotifications();
+      const activeNotifs = allNotifications.filter(n => n.userId === user.id && !n.read);
+      const clearedNotifs = allNotifications.filter(n => n.userId === user.id && n.read);
+      setNotifications(activeNotifs);
+      setNotificationHistory(clearedNotifs);
+    } catch (error) {
+      console.error("Error loading data:", error);
+    }
   };
+
+  const clearAllNotifications = async () => {
+    try {
+      // Mark all active notifications as read in storage
+      const allNotifications = await storage.getNotifications();
+      const updatedNotifications = allNotifications.map(n => 
+        notifications.some(activeN => activeN.id === n.id) ? {
+          ...n,
+          read: true
+        } : n
+      );
+      
+      // Update notifications in storage
+      for (const notification of updatedNotifications) {
+        await storage.updateNotification(notification.id, { read: notification.read });
+      }
+
+      // Update local state
+      setNotificationHistory(prev => {
+        const existingIds = new Set(prev.map(n => n.id));
+        const newItems = notifications.filter(n => !existingIds.has(n.id));
+        return [...prev, ...newItems];
+      });
+      setNotifications([]);
+      toast.success("Notifications cleared");
+    } catch (error) {
+      console.error("Error clearing notifications:", error);
+      toast.error("Failed to clear notifications");
+    }
+  };
+
   const filteredMenu = useMemo(() => {
     return menu.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -74,9 +102,11 @@ export function UserPanel({
       return matchesSearch && matchesType && matchesCuisine;
     });
   }, [menu, searchQuery, typeFilter, cuisineFilter]);
+
   const cuisines = useMemo(() => {
     return Array.from(new Set(menu.map(item => item.cuisine)));
   }, [menu]);
+
   const addToCart = (item: MenuItem) => {
     const existingItem = cart.find(c => c.id === item.id);
     if (existingItem) {
@@ -92,9 +122,11 @@ export function UserPanel({
     }
     toast.success(`${item.name} added to cart`);
   };
+
   const removeFromCart = (itemId: string) => {
     setCart(cart.filter(c => c.id !== itemId));
   };
+
   const updateQuantity = (itemId: string, quantity: number) => {
     if (quantity === 0) {
       removeFromCart(itemId);
@@ -105,9 +137,11 @@ export function UserPanel({
       } : c));
     }
   };
+
   const cartTotal = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [cart]);
+
   const placeOrder = () => {
     if (cart.length === 0) {
       toast.error("Your cart is empty");
@@ -116,27 +150,39 @@ export function UserPanel({
     setShowCart(false);
     setShowPayment(true);
   };
-  const confirmOrder = () => {
-    const maxPrepTime = Math.max(...cart.map(item => item.prepTime));
-    const newOrder: Order = {
-      id: `order-${Date.now()}`,
-      userId: user.id,
-      userName: user.name,
-      items: cart,
-      total: cartTotal,
-      status: "pending",
-      paymentMode,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      prepTime: maxPrepTime
-    };
-    const orders = storage.getOrders();
-    orders.push(newOrder);
-    storage.setOrders(orders);
-    setCart([]);
-    setShowPayment(false);
-    toast.success("Order placed successfully!");
+
+  const confirmOrder = async () => {
+    try {
+      const maxPrepTime = Math.max(...cart.map(item => item.prepTime));
+      const newOrder: Order = {
+        id: `order-${Date.now()}`,
+        userId: user.id,
+        userName: user.name,
+        items: cart,
+        total: cartTotal,
+        status: "pending",
+        paymentMode,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        prepTime: maxPrepTime
+      };
+
+      // Create order in Firebase
+      const createdOrder = await storage.createOrder(newOrder);
+      
+      if (createdOrder) {
+        setCart([]);
+        setShowPayment(false);
+        toast.success("Order placed successfully!");
+      } else {
+        toast.error("Failed to place order");
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+      toast.error("Failed to place order");
+    }
   };
+
   const getTypeColor = (type: string) => {
     switch (type) {
       case "veg":
@@ -149,7 +195,9 @@ export function UserPanel({
         return "bg-muted";
     }
   };
+
   const unreadCount = notifications.filter(n => !n.read).length;
+
   return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">

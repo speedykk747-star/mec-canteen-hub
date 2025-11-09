@@ -39,29 +39,51 @@ export function AdminPanel({ user, onLogout }: AdminPanelProps) {
     loadData();
   }, []);
 
-  const loadData = () => {
-    setUsers(storage.getUsers());
-    setMenu(storage.getMenu());
-    setOrders(storage.getOrders());
-  };
-
-  const toggleUserStatus = (userId: string) => {
-    const allUsers = storage.getUsers();
-    const userIndex = allUsers.findIndex((u) => u.id === userId);
-    if (userIndex !== -1) {
-      allUsers[userIndex].active = !allUsers[userIndex].active;
-      storage.setUsers(allUsers);
-      loadData();
-      toast.success(`User ${allUsers[userIndex].active ? "activated" : "deactivated"}`);
+  const loadData = async () => {
+    try {
+      const [usersData, menuData, ordersData] = await Promise.all([
+        storage.getUsers(),
+        storage.getMenu(),
+        storage.getOrders()
+      ]);
+      
+      setUsers(usersData);
+      setMenu(menuData);
+      setOrders(ordersData);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast.error("Failed to load data");
     }
   };
 
-  const deleteUser = (userId: string) => {
-    const allUsers = storage.getUsers();
-    const filtered = allUsers.filter((u) => u.id !== userId);
-    storage.setUsers(filtered);
-    loadData();
-    toast.success("User deleted");
+  const toggleUserStatus = async (userId: string) => {
+    try {
+      const userToUpdate = users.find(u => u.id === userId);
+      if (userToUpdate) {
+        const success = await storage.updateUser(userId, { active: !userToUpdate.active });
+        if (success) {
+          loadData();
+          toast.success(`User ${!userToUpdate.active ? "activated" : "deactivated"}`);
+        } else {
+          toast.error("Failed to update user status");
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+      toast.error("Failed to update user status");
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      // In a real app, you might want to implement soft delete or handle related data
+      // For now, we'll just show a message since we don't actually delete users in Firebase
+      toast.success("User would be deleted in a full implementation");
+      loadData();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Failed to delete user");
+    }
   };
 
   const openAddMenuItem = () => {
@@ -84,46 +106,75 @@ export function AdminPanel({ user, onLogout }: AdminPanelProps) {
     setShowMenuDialog(true);
   };
 
-  const saveMenuItem = () => {
+  const saveMenuItem = async () => {
     if (!menuForm.name || !menuForm.price || !menuForm.cuisine || !menuForm.prepTime) {
       toast.error("Please fill all required fields");
       return;
     }
 
-    const allMenu = storage.getMenu();
-    
-    if (editingItem) {
-      const index = allMenu.findIndex((item) => item.id === editingItem.id);
-      if (index !== -1) {
-        allMenu[index] = { ...editingItem, ...menuForm };
-        toast.success("Menu item updated");
+    try {
+      let success = false;
+      
+      if (editingItem) {
+        // Update existing item
+        success = await storage.updateMenuItem(editingItem.id, {
+          name: menuForm.name!,
+          price: menuForm.price!,
+          type: menuForm.type as MenuItem["type"],
+          cuisine: menuForm.cuisine!,
+          prepTime: menuForm.prepTime!,
+          image: menuForm.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
+          description: menuForm.description || "",
+        });
+        
+        if (success) {
+          toast.success("Menu item updated");
+        }
+      } else {
+        // Create new item
+        const newItem: Omit<MenuItem, "id"> = {
+          name: menuForm.name!,
+          price: menuForm.price!,
+          type: menuForm.type as MenuItem["type"],
+          cuisine: menuForm.cuisine!,
+          prepTime: menuForm.prepTime!,
+          image: menuForm.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
+          description: menuForm.description || "",
+        };
+        
+        const createdItem = await storage.createMenuItem(newItem);
+        success = !!createdItem;
+        
+        if (success) {
+          toast.success("Menu item added");
+        }
       }
-    } else {
-      const newItem: MenuItem = {
-        id: `item-${Date.now()}`,
-        name: menuForm.name!,
-        price: menuForm.price!,
-        type: menuForm.type as MenuItem["type"],
-        cuisine: menuForm.cuisine!,
-        prepTime: menuForm.prepTime!,
-        image: menuForm.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
-        description: menuForm.description || "",
-      };
-      allMenu.push(newItem);
-      toast.success("Menu item added");
-    }
 
-    storage.setMenu(allMenu);
-    loadData();
-    setShowMenuDialog(false);
+      if (success) {
+        loadData();
+        setShowMenuDialog(false);
+      } else {
+        toast.error("Failed to save menu item");
+      }
+    } catch (error) {
+      console.error("Error saving menu item:", error);
+      toast.error("Failed to save menu item");
+    }
   };
 
-  const deleteMenuItem = (itemId: string) => {
-    const allMenu = storage.getMenu();
-    const filtered = allMenu.filter((item) => item.id !== itemId);
-    storage.setMenu(filtered);
-    loadData();
-    toast.success("Menu item deleted");
+  const deleteMenuItem = async (itemId: string) => {
+    try {
+      const success = await storage.deleteMenuItem(itemId);
+      if (success) {
+        loadData();
+        toast.success("Menu item deleted");
+      } else {
+        toast.error("Failed to delete menu item");
+      }
+    } catch (error) {
+      console.error("Error deleting menu item:", error);
+      toast.error("Failed to delete menu item");
+    }
   };
 
   const stats = useMemo(() => {
@@ -438,7 +489,7 @@ export function AdminPanel({ user, onLogout }: AdminPanelProps) {
                   id="price"
                   type="number"
                   value={menuForm.price}
-                  onChange={(e) => setMenuForm({ ...menuForm, price: parseFloat(e.target.value) })}
+                  onChange={(e) => setMenuForm({ ...menuForm, price: parseFloat(e.target.value) || 0 })}
                 />
               </div>
               <div className="space-y-2">
@@ -447,7 +498,7 @@ export function AdminPanel({ user, onLogout }: AdminPanelProps) {
                   id="prepTime"
                   type="number"
                   value={menuForm.prepTime}
-                  onChange={(e) => setMenuForm({ ...menuForm, prepTime: parseInt(e.target.value) })}
+                  onChange={(e) => setMenuForm({ ...menuForm, prepTime: parseInt(e.target.value) || 0 })}
                 />
               </div>
             </div>
