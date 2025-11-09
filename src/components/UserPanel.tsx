@@ -42,10 +42,29 @@ export function UserPanel({
   }, [user.id]);
   const loadNotifications = () => {
     const allNotifications = storage.getNotifications();
-    setNotifications(allNotifications.filter(n => n.userId === user.id && !n.read));
+    const activeNotifs = allNotifications.filter(n => n.userId === user.id && !n.read);
+    const clearedNotifs = allNotifications.filter(n => n.userId === user.id && n.read);
+    
+    setNotifications(activeNotifs);
+    setNotificationHistory(clearedNotifs);
   };
+
   const clearAllNotifications = () => {
-    setNotificationHistory(prev => [...prev, ...notifications]);
+    // Mark all active notifications as read in storage
+    const allNotifications = storage.getNotifications();
+    const updatedNotifications = allNotifications.map(n => 
+      notifications.some(activeN => activeN.id === n.id) 
+        ? { ...n, read: true } 
+        : n
+    );
+    storage.setNotifications(updatedNotifications);
+    
+    // Update local state
+    setNotificationHistory(prev => {
+      const existingIds = new Set(prev.map(n => n.id));
+      const newItems = notifications.filter(n => !existingIds.has(n.id));
+      return [...prev, ...newItems];
+    });
     setNotifications([]);
     toast.success("Notifications cleared");
   };
