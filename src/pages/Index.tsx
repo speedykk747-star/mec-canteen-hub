@@ -23,6 +23,9 @@ const Index = () => {
     const user = storage.getCurrentUser();
     if (user) {
       setCurrentUser(user);
+    } else {
+      // Redirect to login page if no user is found
+      window.location.href = "/";
     }
   }, []);
 
