@@ -3,6 +3,7 @@ import { User, MenuItem, CartItem, Order, OrderStatus, PaymentMode, Notification
 import { storage } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import mecLogo from "@/assets/mec-logo.png";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -154,7 +155,7 @@ export function UserPanel({
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <img src="/src/assets/mec-logo.png" alt="MEC Logo" className="w-12 h-12 object-contain" />
+            <img src={mecLogo} alt="MEC Logo" className="w-12 h-12 object-contain" />
             <h1 className="text-left text-3xl font-extrabold text-blue-900">MEC Canteen</h1>
           </div>
           <div className="flex items-center gap-4">
