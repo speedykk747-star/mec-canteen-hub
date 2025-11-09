@@ -44,21 +44,18 @@ export function UserPanel({
     const allNotifications = storage.getNotifications();
     const activeNotifs = allNotifications.filter(n => n.userId === user.id && !n.read);
     const clearedNotifs = allNotifications.filter(n => n.userId === user.id && n.read);
-    
     setNotifications(activeNotifs);
     setNotificationHistory(clearedNotifs);
   };
-
   const clearAllNotifications = () => {
     // Mark all active notifications as read in storage
     const allNotifications = storage.getNotifications();
-    const updatedNotifications = allNotifications.map(n => 
-      notifications.some(activeN => activeN.id === n.id) 
-        ? { ...n, read: true } 
-        : n
-    );
+    const updatedNotifications = allNotifications.map(n => notifications.some(activeN => activeN.id === n.id) ? {
+      ...n,
+      read: true
+    } : n);
     storage.setNotifications(updatedNotifications);
-    
+
     // Update local state
     setNotificationHistory(prev => {
       const existingIds = new Set(prev.map(n => n.id));
@@ -156,7 +153,7 @@ export function UserPanel({
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="container flex h-16 items-center justify-between px-4">
-          <h1 className="text-left mx-[45px] text-3xl font-extrabold text-blue-900">MEC Canteen</h1>
+          <h1 className="text-left text-3xl font-extrabold text-blue-900 mx-0">MEC Canteen</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground hidden sm:inline">Welcome, {user.name}</span>
             <Button variant="ghost" size="icon" className="relative" onClick={() => setShowNotifications(true)}>
