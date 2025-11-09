@@ -153,9 +153,14 @@ export function UserPanel({
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="container flex h-16 items-center justify-between px-4">
-          <h1 className="text-left text-3xl font-extrabold text-blue-900 mx-0">MEC Canteen</h1>
+          <div className="flex items-center gap-3">
+            <img src="/src/assets/mec-logo.png" alt="MEC Logo" className="w-12 h-12 object-contain" />
+            <h1 className="text-left text-3xl font-extrabold text-blue-900">MEC Canteen</h1>
+          </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground hidden sm:inline">Welcome, {user.name}</span>
+            <span className="text-base font-semibold hidden sm:inline bg-blue-50 text-blue-700 px-3 py-1 rounded-full shadow-sm border border-blue-100 transition-all hover:bg-blue-100">
+              Welcome, {user.name}
+            </span>
             <Button variant="ghost" size="icon" className="relative" onClick={() => setShowNotifications(true)}>
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
@@ -210,9 +215,11 @@ export function UserPanel({
 
         {/* Menu Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredMenu.map(item => <Card key={item.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedItem(item)}>
-              <img src={item.image} alt={item.name} className="w-full h-48 object-cover rounded-t-lg" />
-              <CardHeader className="pb-3">
+          {filteredMenu.map(item => <Card key={item.id} className="cursor-pointer hover:shadow-lg transition-shadow backdrop-blur-md bg-background/80 overflow-hidden" onClick={() => setSelectedItem(item)}>
+              <div className="relative w-full h-48 bg-transparent">
+                <img src={item.image} alt={item.name} className="w-full h-full object-cover absolute inset-0 opacity-100 z-10" />
+              </div>
+              <CardHeader className="pb-3 bg-background/95 backdrop-blur-lg">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-lg">{item.name}</CardTitle>
                   <Badge className={getTypeColor(item.type)}>{item.type}</Badge>
@@ -225,7 +232,7 @@ export function UserPanel({
                     </span>}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="bg-background/95 backdrop-blur-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-bold text-primary">₹{item.price}</span>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
