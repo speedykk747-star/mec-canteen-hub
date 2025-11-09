@@ -32,13 +32,11 @@ export function UserPanel({ user, onLogout }: UserPanelProps) {
   const [notificationHistory, setNotificationHistory] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [ratingItem, setRatingItem] = useState<MenuItem | null>(null);
-  const [completedOrders, setCompletedOrders] = useState<string[]>([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setMenu(storage.getMenu());
       loadNotifications();
-      checkCompletedOrders();
     }, 2000);
     return () => clearInterval(interval);
   }, [user.id]);
@@ -46,24 +44,6 @@ export function UserPanel({ user, onLogout }: UserPanelProps) {
   const loadNotifications = () => {
     const allNotifications = storage.getNotifications();
     setNotifications(allNotifications.filter((n) => n.userId === user.id && !n.read));
-  };
-
-  const checkCompletedOrders = () => {
-    const orders = storage.getOrders();
-    const userOrders = orders.filter(
-      (o) => o.userId === user.id && (o.status === "ready" || o.status === "completed")
-    );
-    userOrders.forEach((order) => {
-      if (!completedOrders.includes(order.id)) {
-        setCompletedOrders((prev) => [...prev, order.id]);
-        // Show rating modal for first item
-        if (order.items.length > 0) {
-          setTimeout(() => {
-            setRatingItem(order.items[0]);
-          }, 1000);
-        }
-      }
-    });
   };
 
   const clearAllNotifications = () => {
@@ -297,6 +277,38 @@ export function UserPanel({ user, onLogout }: UserPanelProps) {
                 className="w-full h-64 object-cover rounded-lg"
               />
               <p className="text-muted-foreground">{selectedItem.description}</p>
+              {selectedItem.averageRating && selectedItem.reviews && selectedItem.reviews.length > 0 && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Star className="w-5 h-5 fill-primary text-primary" />
+                    <span className="font-semibold">{selectedItem.averageRating.toFixed(1)}</span>
+                    <span className="text-sm text-muted-foreground">
+                      ({selectedItem.reviews.length} {selectedItem.reviews.length === 1 ? 'review' : 'reviews'})
+                    </span>
+                  </div>
+                  {selectedItem.reviews.slice(0, 2).map((review, idx) => (
+                    <div key={idx} className="mt-2 text-sm">
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="font-medium">{review.userName}</span>
+                        <span className="text-muted-foreground">·</span>
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3 h-3 ${
+                                i < review.rating ? 'fill-primary text-primary' : 'text-muted-foreground'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="text-muted-foreground">{review.comment}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <div>
                   <Badge className={getTypeColor(selectedItem.type)}>{selectedItem.type}</Badge>
@@ -324,6 +336,17 @@ export function UserPanel({ user, onLogout }: UserPanelProps) {
                   Order Now
                 </Button>
               </div>
+              <Button
+                variant="outline"
+                className="w-full mt-2"
+                onClick={() => {
+                  setRatingItem(selectedItem);
+                  setSelectedItem(null);
+                }}
+              >
+                <Star className="w-4 h-4 mr-2" />
+                Rate this item
+              </Button>
             </div>
           )}
         </DialogContent>
