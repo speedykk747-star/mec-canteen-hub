@@ -137,7 +137,7 @@ export function UserPanel({
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="container flex h-16 items-center justify-between px-4">
-          <h1 className="text-xl font-bold text-left mx-[45px]">MEC Canteen</h1>
+          <h1 className="text-left mx-[45px] text-3xl font-extrabold text-blue-900">MEC Canteen</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground hidden sm:inline">Welcome, {user.name}</span>
             <Button variant="ghost" size="icon" className="relative" onClick={() => setShowNotifications(true)}>
