@@ -10,6 +10,14 @@ export interface User {
   createdAt: string;
 }
 
+export interface Review {
+  userId: string;
+  userName: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+}
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -19,13 +27,15 @@ export interface MenuItem {
   prepTime: number;
   image: string;
   description: string;
+  reviews?: Review[];
+  averageRating?: number;
 }
 
 export interface CartItem extends MenuItem {
   quantity: number;
 }
 
-export type OrderStatus = "pending" | "approved" | "declined" | "ready" | "completed";
+export type OrderStatus = "pending" | "approved" | "declined" | "ready" | "completed" | "cancelled";
 
 export type PaymentMode = "cash" | "upi" | "card";
 

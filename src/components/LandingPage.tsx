@@ -1,12 +1,13 @@
 import { useState } from "react";
+import { User } from "@/types";
+import { storage, PREDEFINED_ACCOUNTS } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Utensils } from "lucide-react";
-import { User } from "@/types";
-import { storage, PREDEFINED_ACCOUNTS } from "@/lib/storage";
 import { toast } from "sonner";
+import { AnimatedBackground } from "./AnimatedBackground";
+import mecLogo from "@/assets/mec-logo.png";
 
 interface LandingPageProps {
   onLogin: (user: User) => void;
@@ -100,27 +101,16 @@ export function LandingPage({ onLogin }: LandingPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center shadow-glow">
-              <Utensils className="w-8 h-8 text-primary-foreground" />
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4 relative overflow-hidden">
+      <AnimatedBackground />
+      <Card className="w-full max-w-md shadow-xl z-10">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
+            <img src={mecLogo} alt="MEC Logo" className="h-24 w-24 object-contain" />
           </div>
-          <h1 className="text-4xl font-bold">MEC Canteen</h1>
-          <p className="text-muted-foreground">Order delicious food from your college canteen</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{isSignUp ? "Create Account" : "Sign In"}</CardTitle>
-            <CardDescription>
-              {isSignUp
-                ? "Sign up to start ordering food"
-                : "Sign in to access your account"}
-            </CardDescription>
-          </CardHeader>
+          <CardTitle className="text-3xl font-bold">MEC Canteen</CardTitle>
+          <CardDescription>Welcome! Sign in or create an account to order food</CardDescription>
+        </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {isSignUp && (
@@ -181,7 +171,6 @@ export function LandingPage({ onLogin }: LandingPageProps) {
             </div>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 }

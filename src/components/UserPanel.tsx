@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { User, MenuItem, CartItem, Order, OrderStatus, PaymentMode, Notification } from "@/types";
 import { storage } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingCart, LogOut, Search, Bell, X, Clock, DollarSign } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ShoppingCart, LogOut, Search, Bell, X, Clock, Star, History } from "lucide-react";
 import { toast } from "sonner";
+import { RatingModal } from "./RatingModal";
+import { AnimatedBackground } from "./AnimatedBackground";
 
 interface UserPanelProps {
   user: User;
@@ -16,7 +19,7 @@ interface UserPanelProps {
 }
 
 export function UserPanel({ user, onLogout }: UserPanelProps) {
-  const [menu] = useState<MenuItem[]>(storage.getMenu());
+  const [menu, setMenu] = useState<MenuItem[]>(storage.getMenu());
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,13 +29,48 @@ export function UserPanel({ user, onLogout }: UserPanelProps) {
   const [showPayment, setShowPayment] = useState(false);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("cash");
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationHistory, setNotificationHistory] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [ratingItem, setRatingItem] = useState<MenuItem | null>(null);
+  const [completedOrders, setCompletedOrders] = useState<string[]>([]);
 
-  // Load notifications
-  useMemo(() => {
-    const allNotifications = storage.getNotifications();
-    setNotifications(allNotifications.filter((n) => n.userId === user.id));
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMenu(storage.getMenu());
+      loadNotifications();
+      checkCompletedOrders();
+    }, 2000);
+    return () => clearInterval(interval);
   }, [user.id]);
+
+  const loadNotifications = () => {
+    const allNotifications = storage.getNotifications();
+    setNotifications(allNotifications.filter((n) => n.userId === user.id && !n.read));
+  };
+
+  const checkCompletedOrders = () => {
+    const orders = storage.getOrders();
+    const userOrders = orders.filter(
+      (o) => o.userId === user.id && (o.status === "ready" || o.status === "completed")
+    );
+    userOrders.forEach((order) => {
+      if (!completedOrders.includes(order.id)) {
+        setCompletedOrders((prev) => [...prev, order.id]);
+        // Show rating modal for first item
+        if (order.items.length > 0) {
+          setTimeout(() => {
+            setRatingItem(order.items[0]);
+          }, 1000);
+        }
+      }
+    });
+  };
+
+  const clearAllNotifications = () => {
+    setNotificationHistory((prev) => [...prev, ...notifications]);
+    setNotifications([]);
+    toast.success("Notifications cleared");
+  };
 
   const filteredMenu = useMemo(() => {
     return menu.filter((item) => {
@@ -220,7 +258,15 @@ export function UserPanel({ user, onLogout }: UserPanelProps) {
                   <CardTitle className="text-lg">{item.name}</CardTitle>
                   <Badge className={getTypeColor(item.type)}>{item.type}</Badge>
                 </div>
-                <CardDescription>{item.cuisine}</CardDescription>
+                <CardDescription className="flex items-center gap-2">
+                  <span>{item.cuisine}</span>
+                  {item.averageRating && (
+                    <span className="flex items-center gap-1 text-primary">
+                      <Star className="w-4 h-4 fill-primary" />
+                      {item.averageRating.toFixed(1)}
+                    </span>
+                  )}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
@@ -373,32 +419,83 @@ export function UserPanel({ user, onLogout }: UserPanelProps) {
 
       {/* Notifications Dialog */}
       <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Notifications</DialogTitle>
-            <DialogDescription>Your order updates</DialogDescription>
+            <DialogDescription>Your order updates and history</DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">No notifications</p>
-            ) : (
-              notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-3 rounded-lg border ${
-                    notification.read ? "bg-muted/50" : "bg-accent/50"
-                  }`}
-                >
-                  <p className="text-sm">{notification.message}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(notification.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
+          <Tabs defaultValue="active" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="active">
+                Active
+                {notifications.length > 0 && (
+                  <Badge className="ml-2 bg-primary">{notifications.length}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="history">
+                <History className="w-4 h-4 mr-2" />
+                History
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="active" className="space-y-2 max-h-96 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">No active notifications</p>
+              ) : (
+                <>
+                  <div className="flex justify-end mb-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearAllNotifications}
+                    >
+                      Clear All
+                    </Button>
+                  </div>
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="p-3 rounded-lg border bg-accent/50 animate-fade-in"
+                    >
+                      <p className="text-sm">{notification.message}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(notification.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </>
+              )}
+            </TabsContent>
+            <TabsContent value="history" className="space-y-2 max-h-96 overflow-y-auto">
+              {notificationHistory.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">No notification history</p>
+              ) : (
+                notificationHistory.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className="p-3 rounded-lg border bg-muted/50"
+                  >
+                    <p className="text-sm">{notification.message}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(notification.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
+
+      {/* Rating Modal */}
+      <RatingModal
+        item={ratingItem}
+        userId={user.id}
+        userName={user.name}
+        onClose={() => setRatingItem(null)}
+      />
+
+      {/* Animated Background */}
+      <AnimatedBackground />
     </div>
   );
 }

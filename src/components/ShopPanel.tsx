@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, Clock, User as UserIcon, DollarSign } from "lucide-react";
 import { toast } from "sonner";
+import { AnimatedBackground } from "./AnimatedBackground";
 
 interface ShopPanelProps {
   user: User;
@@ -39,8 +40,36 @@ export function ShopPanel({ user, onLogout }: ShopPanelProps) {
   }, [orders]);
 
   const completedOrders = useMemo(() => {
-    return orders.filter((o) => o.status === "ready" || o.status === "completed" || o.status === "declined");
+    return orders.filter((o) => o.status === "ready" || o.status === "completed" || o.status === "declined" || o.status === "cancelled");
   }, [orders]);
+
+  const cancelOrder = (orderId: string) => {
+    const allOrders = storage.getOrders();
+    const orderIndex = allOrders.findIndex((o) => o.id === orderId);
+    
+    if (orderIndex !== -1) {
+      allOrders[orderIndex].status = "cancelled" as any;
+      allOrders[orderIndex].updatedAt = new Date().toISOString();
+      storage.setOrders(allOrders);
+      
+      // Create notification
+      const notifications = storage.getNotifications();
+      const notification: Notification = {
+        id: `notif-${Date.now()}`,
+        userId: allOrders[orderIndex].userId,
+        orderId,
+        message: `Your order #${orderId.slice(-6)} has been cancelled`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      };
+      notifications.push(notification);
+      storage.setNotifications(notifications);
+      
+      loadOrders();
+      setSelectedOrder(null);
+      toast.success("Order cancelled");
+    }
+  };
 
   const updateOrderStatus = (orderId: string, status: Order["status"]) => {
     const allOrders = storage.getOrders();
@@ -297,32 +326,43 @@ export function ShopPanel({ user, onLogout }: ShopPanelProps) {
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                {selectedOrder.status === "pending" && (
-                  <>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  {selectedOrder.status === "pending" && (
+                    <>
+                      <Button
+                        variant="shop"
+                        className="flex-1"
+                        onClick={() => updateOrderStatus(selectedOrder.id, "approved")}
+                      >
+                        Approve Order
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={() => updateOrderStatus(selectedOrder.id, "declined")}
+                      >
+                        Decline Order
+                      </Button>
+                    </>
+                  )}
+                  {selectedOrder.status === "approved" && (
                     <Button
-                      variant="shop"
-                      className="flex-1"
-                      onClick={() => updateOrderStatus(selectedOrder.id, "approved")}
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => updateOrderStatus(selectedOrder.id, "ready")}
                     >
-                      Approve Order
+                      Mark as Ready
                     </Button>
-                    <Button
-                      variant="destructive"
-                      className="flex-1"
-                      onClick={() => updateOrderStatus(selectedOrder.id, "declined")}
-                    >
-                      Decline Order
-                    </Button>
-                  </>
-                )}
-                {selectedOrder.status === "approved" && (
+                  )}
+                </div>
+                {selectedOrder.status !== "completed" && selectedOrder.status !== "cancelled" && (
                   <Button
-                    variant="secondary"
-                    className="w-full"
-                    onClick={() => updateOrderStatus(selectedOrder.id, "ready")}
+                    variant="outline"
+                    className="w-full text-destructive hover:text-destructive"
+                    onClick={() => cancelOrder(selectedOrder.id)}
                   >
-                    Mark as Ready
+                    Cancel Order
                   </Button>
                 )}
               </div>
@@ -330,6 +370,9 @@ export function ShopPanel({ user, onLogout }: ShopPanelProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Animated Background */}
+      <AnimatedBackground />
     </div>
   );
 }

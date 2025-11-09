@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LogOut, Plus, Edit, Trash2, Users, UtensilsCrossed, ShoppingBag, BarChart } from "lucide-react";
 import { toast } from "sonner";
+import { AnimatedBackground } from "./AnimatedBackground";
 
 interface AdminPanelProps {
   user: UserType;
@@ -498,6 +499,9 @@ export function AdminPanel({ user, onLogout }: AdminPanelProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Animated Background */}
+      <AnimatedBackground />
     </div>
   );
 }
